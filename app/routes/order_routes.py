@@ -32,8 +32,8 @@ router = APIRouter()
 @router.get(
     "/orders",
     response_model=list[Order],
-    summary="Listar pedidos",
-    description="Retorna una lista de todos los pedidos.",
+    summary="Pedidos",
+    description="lista pedidos.",
 )
 def get_all_orders():
     return order_service.get_all_orders()
@@ -42,8 +42,8 @@ def get_all_orders():
 @router.get(
     "/orders/{order_id}",
     response_model=Order,
-    summary="Obtener detalle de un pedido",
-    responses={404: {"description": "Pedido no encontrado."}},
+    summary="Detalle PEDIDO",
+    responses={404: {"description": "No encontrado."}},
 )
 def get_order_by_id(order_id: int):
     order = order_service.get_order_by_id(order_id)
@@ -57,8 +57,8 @@ def get_order_by_id(order_id: int):
     response_model=Order,
     status_code=status.HTTP_201_CREATED,
     summary="Crear un pedido",
-    description="Crea un nuevo pedido. El totalAmount se calcula automáticamente.",
-    responses={400: {"description": "Error de validación (ej. cliente o producto no existe)."}},
+    description="Crea pedido. totalAmount se calcula automáticamente.",
+    responses={400: {"description": "Error de validación  cliente o producto no existe."}},
 )
 def create_order(body: CreateOrderRequest):
     items_data = [item.model_dump() for item in body.items]
@@ -68,9 +68,9 @@ def create_order(body: CreateOrderRequest):
 @router.put(
     "/orders/{order_id}",
     response_model=Order,
-    summary="Reemplazar completamente un pedido",
+    summary="Reemplazar  pedido",
     responses={
-        400: {"description": "Error de validación."},
+        400: {"description": "Error validación."},
         404: {"description": "Pedido no encontrado."},
     },
 )
@@ -85,8 +85,8 @@ def replace_order(order_id: int, body: ReplaceOrderRequest):
 @router.patch(
     "/orders/{order_id}",
     response_model=Order,
-    summary="Actualizar parcialmente un pedido",
-    responses={404: {"description": "Pedido no encontrado."}},
+    summary="Actualizar pedido",
+    responses={404: {"description": "No encontrado."}},
 )
 def patch_order(order_id: int, body: PatchOrderRequest):
     result = order_service.patch_order(order_id, body.customerId, body.orderDate)
@@ -98,7 +98,7 @@ def patch_order(order_id: int, body: PatchOrderRequest):
 @router.delete(
     "/orders/{order_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar o anular un pedido",
+    summary="Eliminar  pedido",
     responses={404: {"description": "Pedido no encontrado."}},
 )
 def delete_order(order_id: int):
@@ -115,7 +115,7 @@ def delete_order(order_id: int):
 @router.get(
     "/orders/{order_id}/items",
     response_model=list[OrderItem],
-    summary="Listar items de un pedido",
+    summary="items pedido",
     responses={404: {"description": "Pedido no encontrado."}},
 )
 def get_order_items(order_id: int):
@@ -129,7 +129,7 @@ def get_order_items(order_id: int):
     "/orders/{order_id}/items",
     response_model=Order,
     status_code=status.HTTP_201_CREATED,
-    summary="Agregar un producto a un pedido existente",
+    summary="Agregar  producto a  pedido",
     responses={404: {"description": "Pedido no encontrado."}},
 )
 def add_product_to_order(order_id: int, body: AddItemRequest):
@@ -142,20 +142,20 @@ def add_product_to_order(order_id: int, body: AddItemRequest):
 @router.patch(
     "/orders/{order_id}/items/{item_id}",
     response_model=Order,
-    summary="Actualizar cantidad de un item",
-    responses={404: {"description": "Pedido o item no encontrado."}},
+    summary="Actualizar cantidad de  item",
+    responses={404: {"description": "Pedido no encontrado."}},
 )
 def update_item_quantity(order_id: int, item_id: int, body: UpdateItemQuantityRequest):
     result = order_service.update_item_quantity(order_id, item_id, body.quantity)
     if not result:
-        raise HTTPException(status_code=404, detail="Order or item not found")
+        raise HTTPException(status_code=404, detail="Order  not found")
     return result
 
 
 @router.delete(
     "/orders/{order_id}/items/{item_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Eliminar un item del pedido",
+    summary="Eliminar  item del pedido",
     responses={404: {"description": "Pedido no encontrado."}},
 )
 def remove_item(order_id: int, item_id: int):
@@ -172,7 +172,7 @@ def remove_item(order_id: int, item_id: int):
 @router.get(
     "/products",
     response_model=list[Product],
-    summary="Listar productos",
+    summary="Lista productos",
 )
 def get_all_products():
     return order_service.get_all_products()
@@ -181,7 +181,7 @@ def get_all_products():
 @router.get(
     "/products/{product_id}",
     response_model=Product,
-    summary="Detalle de un producto",
+    summary="Detalle  producto",
     responses={404: {"description": "Producto no encontrado."}},
 )
 def get_product_by_id(product_id: int):
