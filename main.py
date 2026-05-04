@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """
 Punto de entrada de la aplicación – Orders API con FastAPI + Uvicorn.
 Equivalente al index.ts del proyecto original en Express/TypeScript.
@@ -67,12 +66,3 @@ if __name__ == "__main__":
     print(f">>> Server is running on http://localhost:{PORT}")
     print(f">>> Docs available at http://localhost:{PORT}/api/v1/docs")
     uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=(ENV == "development"))
-=======
-from fastapi import FastAPI
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"message": "API de Órdenes funcionando"}
->>>>>>> e4b42f9e2238070bb2079666078cdac1c13f7d26
