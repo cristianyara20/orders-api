@@ -1,0 +1,151 @@
+# Resumen: Migración orders-api → Python + FastAPI
+
+## Contexto
+- **Conversación ID:** db56606e-62ab-44da-8e4c-a9c671ff7f67
+- **Fecha:** 2026-05-04
+- **Proyecto:** `c:\orders-api-develop`
+- **Tarea:** Migrar la API de órdenes de Node.js/Express/TypeScript a Python/FastAPI/Uvicorn
+
+---
+
+## Lo que se hizo
+
+### Punto de partida (Node.js eliminado)
+El proyecto original usaba:
+- **Node.js + Express + TypeScript**
+- Swagger manual (`swagger.ts` de 227 líneas)
+- `package.json`, `tsconfig.json`, carpeta `src/`
+
+Todo eso fue **eliminado**.
+
+---
+
+### Stack final (Python)
+| Tecnología | Rol |
+|---|---|
+| **Python 3.14** | Lenguaje |
+| **FastAPI** | Framework web |
+| **Uvicorn** | Servidor ASGI |
+| **Pydantic v2** | Validación y schemas |
+| **python-dotenv** | Variables de entorno |
+| **venv** | Ambiente virtual |
+
+---
+
+## Estructura del proyecto final
+
+```
+c:\orders-api-develop\
+├── app/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── schemas.py          ← Modelos Pydantic (Customer, Order, Product, etc.)
+│   ├── repositories/
+│   │   ├── __init__.py
+│   │   └── order_repository.py ← Carga Orders.json, persistencia en memoria
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   └── order_routes.py     ← Los 14 endpoints de la API
+│   └── services/
+│       ├── __init__.py
+│       └── order_service.py    ← Lógica de negocio + cálculo de totalAmount
+├── env/                        ← Ambiente virtual (NO subir a Git)
+├── .env                        ← PORT=3000, ENV=development
+├── .gitignore
+├── main.py                     ← Punto de entrada FastAPI + Uvicorn
+├── Orders.json                 ← Datos semilla (10 órdenes)
+├── README.md
+└── requirements.txt
+```
+
+---
+
+## Equivalencias TypeScript → Python
+
+| Capa | Archivo TS (eliminado) | Archivo Python |
+|---|---|---|
+| Modelos | `src/models/index.ts` | `app/models/schemas.py` |
+| Repositorio | `src/repositories/order.repository.ts` | `app/repositories/order_repository.py` |
+| Servicio | `src/services/order.service.ts` | `app/services/order_service.py` |
+| Rutas | `src/routes/order.routes.ts` | `app/routes/order_routes.py` |
+| Controladores | `src/controllers/order.controller.ts` | *(fusionado en order_routes.py)* |
+| Swagger | `src/swagger.ts` (manual, 227 líneas) | **Automático por FastAPI** |
+| Entrada | `src/index.ts` | `main.py` |
+
+---
+
+## Endpoints implementados (14 en total)
+
+### Orders
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/orders` | Listar todos los pedidos |
+| GET | `/api/v1/orders/{order_id}` | Detalle de un pedido |
+| POST | `/api/v1/orders` | Crear pedido (calcula totalAmount) |
+| PUT | `/api/v1/orders/{order_id}` | Reemplazar pedido completo |
+| PATCH | `/api/v1/orders/{order_id}` | Actualizar parcialmente |
+| DELETE | `/api/v1/orders/{order_id}` | Eliminar pedido |
+
+### Order Items
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/orders/{order_id}/items` | Listar items del pedido |
+| POST | `/api/v1/orders/{order_id}/items` | Agregar producto (recalcula total) |
+| PATCH | `/api/v1/orders/{order_id}/items/{item_id}` | Cambiar cantidad (recalcula total) |
+| DELETE | `/api/v1/orders/{order_id}/items/{item_id}` | Eliminar item (recalcula total) |
+
+### Products
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/products` | Listar productos |
+| GET | `/api/v1/products/{product_id}` | Detalle con proveedor |
+
+### Sistema
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/v1/health` | Estado del servidor |
+| GET | `/api/v1/docs` | Swagger UI automático |
+| GET | `/api/v1/redoc` | ReDoc automático |
+
+---
+
+## Cómo ejecutar el proyecto
+
+```powershell
+# 1. Ir a la carpeta
+cd c:\orders-api-develop
+
+# 2. Crear ambiente virtual (solo la primera vez)
+python -m venv env
+
+# 3. Activar ambiente virtual
+.\env\Scripts\Activate.ps1
+
+# 4. Instalar dependencias (solo la primera vez)
+pip install -r requirements.txt
+
+# 5. Ejecutar servidor
+python main.py
+```
+
+**URLs disponibles:**
+- Swagger UI: http://localhost:3000/api/v1/docs
+- ReDoc:       http://localhost:3000/api/v1/redoc
+- Health:      http://localhost:3000/api/v1/health
+
+---
+
+## Conceptos explicados en este chat
+
+1. **`__pycache__/`** — Carpeta automática de Python con bytecode compilado (.pyc). No tocar, está en `.gitignore`.
+2. **Swagger automático** — FastAPI genera la documentación desde los decoradores de ruta y los modelos Pydantic. No se necesita un archivo manual.
+3. **Pydantic** — Reemplaza las interfaces TypeScript; valida automáticamente los datos de entrada/salida.
+4. **`venv`** — Ambiente virtual que aísla las dependencias del proyecto del Python global del sistema.
+
+---
+
+## Pendientes (según planeación original)
+- [ ] Pruebas manuales con Postman/Thunder Client
+- [ ] Etiquetar versión `v1.0.0` en Git
+- [ ] Desplegar en Render / Railway / similar
