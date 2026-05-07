@@ -9,7 +9,7 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 
-from app.models.schemas import Order, OrderItem, Product, Customer
+from app.models.schemas import Order, OrderItem, Product, Customer, Supplier
 from app.repositories.order_repository import OrderRepository
 
 
@@ -31,8 +31,18 @@ class OrderService:
 
     # ─── Orders ───────────────────────────────────────────────────
 
+    def get_orders_paginated(
+        self, page: int, limit: int, customer_id: Optional[int], date_from: Optional[str], date_to: Optional[str], sort: Optional[str]
+    ) -> dict:
+        items, total = self.repo.find_orders_paginated(page, limit, customer_id, date_from, date_to, sort)
+        return {"total": total, "page": page, "limit": limit, "items": items}
+
     def get_all_orders(self) -> list[Order]:
         return self.repo.find_all_orders()
+
+    def get_orders_by_customer(self, customer_id: int) -> list[Order]:
+        """Return orders filtered by customer ID."""
+        return [o for o in self.repo.find_all_orders() if o.customer and o.customer.id == customer_id]
 
     def get_order_by_id(self, order_id: int) -> Optional[Order]:
         return self.repo.find_order_by_id(order_id)
@@ -222,8 +232,128 @@ class OrderService:
 
     # ─── Products ─────────────────────────────────────────────────
 
+    def get_products_paginated(
+        self, page: int, limit: int, supplier_id: Optional[int], search: Optional[str], discontinued: Optional[bool], sort: Optional[str]
+    ) -> dict:
+        items, total = self.repo.find_products_paginated(page, limit, supplier_id, search, discontinued, sort)
+        return {"total": total, "page": page, "limit": limit, "items": items}
+
     def get_all_products(self) -> list[Product]:
         return self.repo.find_all_products()
 
     def get_product_by_id(self, product_id: int) -> Optional[Product]:
         return self.repo.find_product_by_id(product_id)
+
+    def create_product(self, data: dict) -> Product:
+        supplier = None
+        if data.get("supplierId"):
+            supplier = self.repo.find_supplier_by_id(data["supplierId"])
+            if not supplier:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supplier not found")
+        
+        new_product = Product(
+            id=self._generate_id(),
+            productName=data["productName"],
+            unitPrice=data["unitPrice"],
+            package=data["package"],
+            isDiscontinued=data.get("isDiscontinued", False),
+            supplier=supplier
+        )
+        return self.repo.create_product(new_product)
+
+    def replace_product(self, product_id: int, data: dict) -> Optional[Product]:
+        existing = self.repo.find_product_by_id(product_id)
+        if not existing:
+            return None
+        
+        supplier = None
+        if data.get("supplierId"):
+            supplier = self.repo.find_supplier_by_id(data["supplierId"])
+            if not supplier:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supplier not found")
+
+        updated_data = data.copy()
+        if "supplierId" in updated_data:
+            del updated_data["supplierId"]
+        updated_data["supplier"] = supplier
+
+        return self.repo.update_product(product_id, updated_data)
+
+    def update_product(self, product_id: int, data: dict) -> Optional[Product]:
+        existing = self.repo.find_product_by_id(product_id)
+        if not existing:
+            return None
+            
+        updates = data.copy()
+        if "supplierId" in updates:
+            supplier = self.repo.find_supplier_by_id(updates["supplierId"])
+            if not supplier and updates["supplierId"] is not None:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supplier not found")
+            updates["supplier"] = supplier
+            del updates["supplierId"]
+
+        return self.repo.update_product(product_id, updates)
+
+    def delete_product(self, product_id: int) -> bool:
+        return self.repo.delete_product(product_id)
+
+    # ─── Customers ────────────────────────────────────────────────
+
+    def get_customers_paginated(
+        self, page: int, limit: int, country: Optional[str], city: Optional[str], search: Optional[str], sort: Optional[str]
+    ) -> dict:
+        items, total = self.repo.find_customers_paginated(page, limit, country, city, search, sort)
+        return {"total": total, "page": page, "limit": limit, "items": items}
+
+    def get_all_customers(self) -> list[Customer]:
+        return self.repo.find_all_customers()
+
+    def get_customer_by_id(self, customer_id: int) -> Optional[Customer]:
+        return self.repo.find_customer_by_id(customer_id)
+
+    def create_customer(self, data: dict) -> Customer:
+        new_customer = Customer(
+            id=self._generate_id(),
+            firstName=data["firstName"],
+            lastName=data["lastName"],
+            city=data["city"],
+            country=data["country"],
+            phone=data["phone"]
+        )
+        return self.repo.create_customer(new_customer)
+
+    def update_customer(self, customer_id: int, data: dict) -> Optional[Customer]:
+        return self.repo.update_customer(customer_id, data)
+
+    # ─── Suppliers ────────────────────────────────────────────────
+
+    def get_suppliers_paginated(
+        self, page: int, limit: int, country: Optional[str], city: Optional[str], search: Optional[str], sort: Optional[str]
+    ) -> dict:
+        items, total = self.repo.find_suppliers_paginated(page, limit, country, city, search, sort)
+        return {"total": total, "page": page, "limit": limit, "items": items}
+
+    def get_all_suppliers(self) -> list[Supplier]:
+        return self.repo.find_all_suppliers()
+
+    def get_supplier_by_id(self, supplier_id: int) -> Optional[Supplier]:
+        return self.repo.find_supplier_by_id(supplier_id)
+
+    def get_products_by_supplier(self, supplier_id: int) -> list[Product]:
+        return self.repo.find_products_by_supplier(supplier_id)
+
+    def create_supplier(self, data: dict) -> Supplier:
+        new_supplier = Supplier(
+            id=self._generate_id(),
+            companyName=data["companyName"],
+            contactName=data["contactName"],
+            contactTitle=data["contactTitle"],
+            city=data["city"],
+            country=data["country"],
+            phone=data["phone"],
+            fax=data.get("fax")
+        )
+        return self.repo.create_supplier(new_supplier)
+
+    def update_supplier(self, supplier_id: int, data: dict) -> Optional[Supplier]:
+        return self.repo.update_supplier(supplier_id, data)
