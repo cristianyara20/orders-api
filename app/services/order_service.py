@@ -41,25 +41,19 @@ class OrderService:
         return self.repo.find_all_orders()
 
     def get_orders_by_customer(self, customer_id: int) -> list[Order]:
-        """Return orders filtered by customer ID."""
         return [o for o in self.repo.find_all_orders() if o.customer and o.customer.id == customer_id]
 
     def get_order_by_id(self, order_id: int) -> Optional[Order]:
         return self.repo.find_order_by_id(order_id)
 
-    def create_order(
-        self, customer_id: int, items_data: list[dict]
-    ) -> Order:
-        # Validar cliente
-        customers = self.repo.find_all_customers()
-        customer = next((c for c in customers if c.id == customer_id), None)
+    def create_order(self, customer_id: int, items_data: list[dict]) -> Order:
+        customer = self.repo.find_customer_by_id(customer_id)
         if not customer:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Customer with ID {customer_id} not found",
             )
 
-        # Construir items
         items: list[OrderItem] = []
         for item_data in items_data:
             product = self.repo.find_product_by_id(item_data["productId"])
@@ -88,15 +82,12 @@ class OrderService:
 
         return self.repo.save_order(new_order)
 
-    def replace_order(
-        self, order_id: int, customer_id: int, items_data: list[dict]
-    ) -> Optional[Order]:
+    def replace_order(self, order_id: int, customer_id: int, items_data: list[dict]) -> Optional[Order]:
         existing = self.repo.find_order_by_id(order_id)
         if not existing:
             return None
 
-        customers = self.repo.find_all_customers()
-        customer = next((c for c in customers if c.id == customer_id), None)
+        customer = self.repo.find_customer_by_id(customer_id)
         if not customer:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -129,9 +120,7 @@ class OrderService:
         )
         return self.repo.update_order(order_id, replaced)
 
-    def patch_order(
-        self, order_id: int, customer_id: Optional[int], order_date: Optional[str]
-    ) -> Optional[Order]:
+    def patch_order(self, order_id: int, customer_id: Optional[int], order_date: Optional[str]) -> Optional[Order]:
         existing = self.repo.find_order_by_id(order_id)
         if not existing:
             return None
@@ -139,8 +128,7 @@ class OrderService:
         updates: dict = {}
 
         if customer_id is not None:
-            customers = self.repo.find_all_customers()
-            new_customer = next((c for c in customers if c.id == customer_id), None)
+            new_customer = self.repo.find_customer_by_id(customer_id)
             if new_customer:
                 updates["customer"] = new_customer
 
@@ -158,9 +146,7 @@ class OrderService:
 
     # ─── Order Items ──────────────────────────────────────────────
 
-    def add_product_to_order(
-        self, order_id: int, product_id: int, quantity: int
-    ) -> Optional[Order]:
+    def add_product_to_order(self, order_id: int, product_id: int, quantity: int) -> Optional[Order]:
         order = self.repo.find_order_by_id(order_id)
         if not order:
             return None
@@ -188,9 +174,7 @@ class OrderService:
         )
         return self.repo.update_order(order_id, updated)
 
-    def update_item_quantity(
-        self, order_id: int, item_id: int, quantity: int
-    ) -> Optional[Order]:
+    def update_item_quantity(self, order_id: int, item_id: int, quantity: int) -> Optional[Order]:
         order = self.repo.find_order_by_id(order_id)
         if not order:
             return None
@@ -214,9 +198,7 @@ class OrderService:
         )
         return self.repo.update_order(order_id, updated)
 
-    def remove_item_from_order(
-        self, order_id: int, item_id: int
-    ) -> Optional[Order]:
+    def remove_item_from_order(self, order_id: int, item_id: int) -> Optional[Order]:
         order = self.repo.find_order_by_id(order_id)
         if not order:
             return None
@@ -250,7 +232,7 @@ class OrderService:
             supplier = self.repo.find_supplier_by_id(data["supplierId"])
             if not supplier:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Supplier not found")
-        
+
         new_product = Product(
             id=self._generate_id(),
             productName=data["productName"],
@@ -265,7 +247,7 @@ class OrderService:
         existing = self.repo.find_product_by_id(product_id)
         if not existing:
             return None
-        
+
         supplier = None
         if data.get("supplierId"):
             supplier = self.repo.find_supplier_by_id(data["supplierId"])
@@ -283,7 +265,7 @@ class OrderService:
         existing = self.repo.find_product_by_id(product_id)
         if not existing:
             return None
-            
+
         updates = data.copy()
         if "supplierId" in updates:
             supplier = self.repo.find_supplier_by_id(updates["supplierId"])
