@@ -23,23 +23,22 @@ app = FastAPI(
     title="Orders API",
     version="1.0.0",
     description="API REST para la gestión de pedidos, clientes y productos.",
-    docs_url="/api/v1/docs",       # Swagger UI  (igual que la versión TS)
-    redoc_url="/api/v1/redoc",     # ReDoc (bonus de FastAPI)
+    docs_url="/api/v1/docs",
+    redoc_url="/api/v1/redoc",
     openapi_url="/api/v1/openapi.json",
 )
 
-# CORS (equivalente a app.use(cors()))
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # ─── Rutas ────────────────────────────────────────────────────────
 
-# Prefijo obligatorio según la guía
 app.include_router(order_router, prefix="/api/v1")
 
 
@@ -52,7 +51,6 @@ def read_root():
     }
 
 
-# Health check
 @app.get("/api/v1/health", summary="Estado del servicio", tags=["Sistema"])
 def health_check():
     return {"status": "ok", "message": "API is running"}
